@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "Catalog" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
     "slug" TEXT NOT NULL,
@@ -9,8 +9,10 @@ CREATE TABLE "Catalog" (
     "coverImage" TEXT,
     "pageCount" INTEGER NOT NULL DEFAULT 0,
     "isPublished" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Catalog_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
