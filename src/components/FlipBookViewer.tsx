@@ -14,35 +14,23 @@ interface FlipBookViewerProps {
   title: string;
 }
 
-// Each page must be a forwardRef component for react-pageflip
+type PageFlipApi = {
+  flipNext: () => void;
+  flipPrev: () => void;
+};
+
 const FlipPage = React.forwardRef<
   HTMLDivElement,
-  { pageNumber: number; width: number; height: number; isLoading: boolean }
->(({ pageNumber, width, height, isLoading }, ref) => (
-  <div
-    ref={ref}
-    className="bg-white overflow-hidden"
-    style={{ width, height }}
-  >
-    {isLoading ? (
-      <div
-        className="w-full h-full flex items-center justify-center bg-slate-50"
-        style={{ width, height }}
-      >
-        <div className="animate-pulse flex flex-col items-center gap-3">
-          <div className="w-16 h-16 rounded-full bg-slate-200" />
-          <div className="h-2 w-24 rounded bg-slate-200" />
-        </div>
-      </div>
-    ) : (
-      <Page
-        pageNumber={pageNumber}
-        width={width}
-        renderTextLayer={false}
-        renderAnnotationLayer={false}
-        className="block"
-      />
-    )}
+  { pageNumber: number; width: number; height: number }
+>(({ pageNumber, width, height }, ref) => (
+  <div ref={ref} className="bg-white overflow-hidden" style={{ width, height }}>
+    <Page
+      pageNumber={pageNumber}
+      width={width}
+      renderTextLayer={false}
+      renderAnnotationLayer={false}
+      className="block"
+    />
   </div>
 ));
 FlipPage.displayName = "FlipPage";
@@ -50,46 +38,37 @@ FlipPage.displayName = "FlipPage";
 export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [isLoading, setIsLoading] = useState(true);
+  const [atCover, setAtCover] = useState(true);
   const [zoom, setZoom] = useState(1);
-  const flipBookRef = useRef<{ pageFlip: () => { flipNext: () => void; flipPrev: () => void; getCurrentPageIndex: () => number } } | null>(null);
+  const flipBookRef = useRef<{
+    pageFlip: () => PageFlipApi | undefined;
+  } | null>(null);
 
   const PAGE_WIDTH = 520;
   const PAGE_HEIGHT = 735;
 
-  const onDocumentLoadSuccess = useCallback(
-    ({ numPages }: { numPages: number }) => {
-      setNumPages(numPages);
-      setIsLoading(false);
-    },
-    []
-  );
+  const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+  }, []);
 
-  const goToPrevPage = () => {
-    flipBookRef.current?.pageFlip().flipPrev();
-  };
+  const onFlip = useCallback((e: { data: number }) => {
+    setCurrentPage(e.data + 1);
+    setAtCover(e.data === 0);
+  }, []);
 
   const goToNextPage = () => {
-    flipBookRef.current?.pageFlip().flipNext();
+    if (atCover) setAtCover(false);
+    flipBookRef.current?.pageFlip()?.flipNext();
   };
-
-  const onFlip = useCallback(
-    (e: { data: number }) => {
-      setCurrentPage(e.data + 1);
-    },
-    []
-  );
+  const goToPrevPage = () => {
+    if (currentPage <= 2) setAtCover(true);
+    flipBookRef.current?.pageFlip()?.flipPrev();
+  };
 
   return (
     <div className="flex flex-col items-center gap-4 w-full">
-      {/* Title bar */}
       <div className="text-center">
         <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
-        {numPages > 0 && (
-          <p className="text-sm text-slate-500 mt-1">
-            Page {currentPage} of {numPages}
-          </p>
-        )}
       </div>
 
       {/* Zoom controls */}
@@ -121,78 +100,97 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
 
       {/* Flipbook */}
       <div
-        className="flipbook-wrapper relative"
-        style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
+        className="flipbook-viewport overflow-hidden"
+        style={{
+          width: atCover ? PAGE_WIDTH : PAGE_WIDTH * 2,
+          transform: `scale(${zoom})`,
+          transformOrigin: "top center",
+          transition: "width 0.7s ease",
+        }}
       >
-        <Document
-          file={pdfUrl}
-          onLoadSuccess={onDocumentLoadSuccess}
-          loading={
-            <div
-              className="flex items-center justify-center bg-white rounded-lg shadow-lg"
-              style={{ width: PAGE_WIDTH * 2, height: PAGE_HEIGHT }}
-            >
-              <div className="text-center">
-                <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-sm text-slate-500">Loading catalog…</p>
-              </div>
-            </div>
-          }
-          error={
-            <div
-              className="flex items-center justify-center bg-white rounded-lg shadow-lg"
-              style={{ width: PAGE_WIDTH * 2, height: PAGE_HEIGHT }}
-            >
-              <p className="text-red-500 text-sm">Failed to load PDF.</p>
-            </div>
-          }
+        <div
+          className="flipbook-wrapper relative"
+          style={{
+            width: PAGE_WIDTH * 2,
+            transform: `translateX(${atCover ? -PAGE_WIDTH : 0}px)`,
+            transition: "transform 0.7s ease",
+          }}
         >
-          {numPages > 0 && (
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            <HTMLFlipBook
-              ref={flipBookRef}
-              width={PAGE_WIDTH}
-              height={PAGE_HEIGHT}
-              size="fixed"
-              minWidth={300}
-              maxWidth={PAGE_WIDTH}
-              minHeight={400}
-              maxHeight={PAGE_HEIGHT}
-              showCover={true}
-              flippingTime={700}
-              style={{ margin: "0 auto" }}
-              startPage={0}
-              drawShadow={true}
-              usePortrait={false}
-              startZIndex={0}
-              autoSize={false}
-              maxShadowOpacity={0.4}
-              mobileScrollSupport={true}
-              clickEventForward={true}
-              useMouseEvents={true}
+          <Document
+            file={pdfUrl}
+            onLoadSuccess={onDocumentLoadSuccess}
+            loading={
+              <div
+                className="flex items-center justify-center bg-white rounded-lg shadow-lg"
+                style={{ width: PAGE_WIDTH * 2, height: PAGE_HEIGHT }}
+              >
+                <div className="text-center">
+                  <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-3" />
+                  <p className="text-sm text-slate-500">Loading catalog…</p>
+                </div>
+              </div>
+            }
+            error={
+              <div
+                className="flex items-center justify-center bg-white rounded-lg shadow-lg"
+                style={{ width: PAGE_WIDTH * 2, height: PAGE_HEIGHT }}
+              >
+                <p className="text-red-500 text-sm">Failed to load PDF.</p>
+              </div>
+            }
+          >
+            {numPages > 0 && (
+              <HTMLFlipBook
+                ref={flipBookRef}
+                width={PAGE_WIDTH}
+                height={PAGE_HEIGHT}
+                size="fixed"
+                minWidth={300}
+                maxWidth={PAGE_WIDTH}
+                minHeight={400}
+                maxHeight={PAGE_HEIGHT}
+                showCover={true}
+                flippingTime={700}
+                style={{ margin: "0 auto" }}
+                startPage={0}
+                drawShadow={true}
+                usePortrait={false}
+                startZIndex={0}
+                autoSize={true}
+                maxShadowOpacity={0.4}
+                mobileScrollSupport={true}
+                clickEventForward={true}
+                useMouseEvents={true}
               swipeDistance={30}
-              showPageCorners={true}
+              showPageCorners={false}
               disableFlipByClick={false}
+              onChangeState={(e: { data: string }) => {
+                if (
+                  atCover &&
+                  (e.data === "flipping" || e.data === "user_fold" || e.data === "fold_corner")
+                ) {
+                  setAtCover(false);
+                }
+              }}
               onFlip={onFlip}
               className="shadow-2xl rounded-sm"
             >
-              {Array.from({ length: numPages }, (_, i) => (
-                <FlipPage
-                  key={i}
-                  pageNumber={i + 1}
-                  width={PAGE_WIDTH}
-                  height={PAGE_HEIGHT}
-                  isLoading={isLoading}
-                />
-              ))}
-            </HTMLFlipBook>
-          )}
-        </Document>
+                {Array.from({ length: numPages }, (_, i) => (
+                  <FlipPage
+                    key={i}
+                    pageNumber={i + 1}
+                    width={PAGE_WIDTH}
+                    height={PAGE_HEIGHT}
+                  />
+                ))}
+              </HTMLFlipBook>
+            )}
+          </Document>
+        </div>
       </div>
 
-      {/* Navigation controls */}
       {numPages > 0 && (
-        <div className="flex items-center gap-4 mt-4">
+        <div className="flex items-center gap-4 mt-2">
           <button
             onClick={goToPrevPage}
             disabled={currentPage <= 1}
@@ -221,9 +219,8 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
         </div>
       )}
 
-      {/* Keyboard hint */}
       <p className="text-xs text-slate-400 mt-1">
-        Tip: Click page corners to flip, or use arrow keys
+        Tip: Click page corners to flip, or use the buttons
       </p>
     </div>
   );

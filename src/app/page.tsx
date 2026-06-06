@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import SiteHeader from "@/components/SiteHeader";
-import CatalogCard from "@/components/CatalogCard";
+import CatalogGrid from "@/components/CatalogGrid";
 
 export const dynamic = "force-dynamic";
 
@@ -29,28 +29,19 @@ export default async function HomePage() {
 
         {/* Catalog grid */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {catalogs.length === 0 ? (
-            <div className="text-center py-24">
-              <p className="text-black/30 dark:text-white/30 text-lg">No catalogs yet.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
-              {catalogs.map((catalog) => (
-                <CatalogCard
-                  key={catalog.id}
-                  id={catalog.id}
-                  title={catalog.title}
-                  description={catalog.description}
-                  slug={catalog.slug}
-                  coverImage={catalog.coverImage}
-                  filepath={catalog.filepath}
-                  pageCount={catalog.pageCount}
-                  isActive={catalog.isActive}
-                  createdAt={catalog.createdAt.toISOString()}
-                />
-              ))}
-            </div>
-          )}
+          <CatalogGrid
+            catalogs={catalogs.map((c) => ({
+              id: c.id,
+              title: c.title,
+              description: c.description,
+              slug: c.slug,
+              coverImage: c.coverImage,
+              filepath: c.filepath,
+              pageCount: c.pageCount,
+              isActive: c.isActive,
+              createdAt: c.createdAt.toISOString(),
+            }))}
+          />
         </section>
       </main>
 
