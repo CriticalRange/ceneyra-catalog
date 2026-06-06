@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { unlink } from "fs/promises";
-import { join } from "path";
+import { del } from "@vercel/blob";
 
 export async function GET(
   _req: NextRequest,
@@ -61,22 +60,10 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Delete the PDF file
-  try {
-    const fullPath = join(process.cwd(), "public", catalog.filepath);
-    await unlink(fullPath);
-  } catch {
-    // File may already be gone
-  }
-
-  // Delete cover image if it exists and is locally stored
-  if (catalog.coverImage && catalog.coverImage.startsWith("/uploads/")) {
-    try {
-      const coverPath = join(process.cwd(), "public", catalog.coverImage);
-      await unlink(coverPath);
-    } catch {
-      // File may already be gone
-    }
+  // Delete files from Vercel Blob
+  const toDelete = [catalog.filepath, catalog.coverImage].filter(Boolean) as string[];
+  if (toDelete.length) {
+    try { await del(toDelete); } catch { /* ignore */ }
   }
 
   await prisma.catalog.delete({ where: { id } });
