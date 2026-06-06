@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import { del } from "@vercel/blob";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/db";
-import { existsSync } from "fs";
-
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
@@ -13,80 +10,55 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const formData = await request.formData();
-  const file = formData.get("pdf") as File | null;
-  const title = formData.get("title") as string;
-  const description = formData.get("description") as string | null;
-  const coverFile = formData.get("cover") as File | null;
+  const body = await request.json();
 
-  if (!file || !title) {
-    return NextResponse.json(
-      { error: "PDF file and title are required" },
-      { status: 400 }
-    );
-  }
-
-  if (!file.name.toLowerCase().endsWith(".pdf")) {
-    return NextResponse.json(
-      { error: "Only PDF files are allowed" },
-      { status: 400 }
-    );
-  }
-
-  if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json(
-      { error: "File size must be under 50 MB" },
-      { status: 400 }
-    );
-  }
-
-  try {
-    const uploadsDir = join(process.cwd(), "public", "uploads");
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-
-    const timestamp = Date.now();
-    const safeFilename = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-    const pdfPath = join(uploadsDir, safeFilename);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(pdfPath, buffer);
-    const filepath = `/uploads/${safeFilename}`;
-
-    let coverImage: string | undefined;
-    if (coverFile && coverFile.size > 0) {
-      const coverExt = coverFile.name.split(".").pop()?.toLowerCase();
-      const allowedExts = ["jpg", "jpeg", "png", "webp"];
-      if (coverExt && allowedExts.includes(coverExt)) {
-        const coverFilename = `${timestamp}-cover.${coverExt}`;
-        const coverPath = join(uploadsDir, coverFilename);
-        const coverBuffer = Buffer.from(await coverFile.arrayBuffer());
-        await writeFile(coverPath, coverBuffer);
-        coverImage = `/uploads/${coverFilename}`;
-      }
-    }
-
-    const hasActive = await prisma.catalog.count({ where: { isActive: true } });
-
-    const catalog = await prisma.catalog.create({
-      data: {
-        title: title.trim(),
-        description: description?.trim() || null,
-        filename: file.name,
-        filepath,
-        coverImage: coverImage ?? null,
-        pageCount: 0,
-        isPublished: true,
-        isActive: hasActive === 0,
-      },
+  // Vercel Blob client token / completion handshake
+  if (
+    body.type === "blob.generate-client-token" ||
+    body.type === "blob.upload-completed"
+  ) {
+    const response = await handleUpload({
+      body: body as HandleUploadBody,
+      request,
+      onBeforeGenerateToken: async () => ({
+        allowedContentTypes: [
+          "application/pdf",
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+        ],
+        maximumSizeInBytes: 52_428_800, // 50 MB
+      }),
+      onUploadCompleted: async () => {},
     });
+    return NextResponse.json(response);
+  }
 
-    return NextResponse.json(catalog, { status: 201 });
-  } catch (err) {
-    console.error("Upload error:", err);
+  // Save catalog metadata once client-side uploads are complete
+  const { title, description, pdfUrl, pdfName, coverUrl } = body;
+  if (!title?.trim() || !pdfUrl) {
+    try { await del(pdfUrl); } catch { /* ignore */ }
+    if (coverUrl) try { await del(coverUrl); } catch { /* ignore */ }
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Upload failed" },
-      { status: 500 }
+      { error: "PDF URL and title are required" },
+      { status: 400 }
     );
   }
+
+  const hasActive = await prisma.catalog.count({ where: { isActive: true } });
+
+  const catalog = await prisma.catalog.create({
+    data: {
+      title: title.trim(),
+      description: description?.trim() || null,
+      filename: pdfName ?? "catalog.pdf",
+      filepath: pdfUrl,
+      coverImage: coverUrl ?? null,
+      pageCount: 0,
+      isPublished: true,
+      isActive: hasActive === 0,
+    },
+  });
+
+  return NextResponse.json(catalog, { status: 201 });
 }

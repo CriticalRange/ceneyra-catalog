@@ -2,6 +2,7 @@
 
 import { useState, useRef, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { upload } from "@vercel/blob/client";
 
 export default function UploadForm() {
   const router = useRouter();
@@ -77,27 +78,43 @@ export default function UploadForm() {
     if (!pdfFile || !title.trim()) return;
 
     setIsUploading(true);
-    setProgress(10);
+    setProgress(5);
     setError("");
 
-    const formData = new FormData();
-    formData.append("pdf", pdfFile);
-    formData.append("title", title.trim());
-    if (description.trim()) formData.append("description", description.trim());
-    if (coverFile) formData.append("cover", coverFile);
-
     try {
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setProgress((p) => Math.min(p + 5, 85));
-      }, 200);
+      // Upload PDF directly to Vercel Blob (bypasses the 4.5 MB function limit)
+      const safeName = pdfFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const pdfBlob = await upload(`pdfs/${Date.now()}-${safeName}`, pdfFile, {
+        access: "public",
+        handleUploadUrl: "/api/upload",
+      });
+      setProgress(65);
 
+      // Upload cover image if provided
+      let coverUrl: string | undefined;
+      if (coverFile && coverFile.size > 0) {
+        const ext = coverFile.name.split(".").pop()?.toLowerCase();
+        const coverBlob = await upload(`covers/${Date.now()}-cover.${ext}`, coverFile, {
+          access: "public",
+          handleUploadUrl: "/api/upload",
+        });
+        coverUrl = coverBlob.url;
+      }
+      setProgress(85);
+
+      // Save metadata
       const res = await fetch("/api/upload", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim() || undefined,
+          pdfUrl: pdfBlob.url,
+          pdfName: pdfFile.name,
+          coverUrl,
+        }),
       });
 
-      clearInterval(progressInterval);
       setProgress(100);
 
       if (!res.ok) {

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { unlink } from "fs/promises";
-import { join } from "path";
+import { del } from "@vercel/blob";
 
 export async function PATCH(
   request: NextRequest,
@@ -49,14 +48,10 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  try {
-    await unlink(join(process.cwd(), "public", catalog.filepath));
-  } catch {}
-
-  if (catalog.coverImage?.startsWith("/uploads/")) {
-    try {
-      await unlink(join(process.cwd(), "public", catalog.coverImage));
-    } catch {}
+  // Delete files from Vercel Blob
+  const toDelete = [catalog.filepath, catalog.coverImage].filter(Boolean) as string[];
+  if (toDelete.length) {
+    try { await del(toDelete); } catch { /* ignore */ }
   }
 
   await prisma.catalog.delete({ where: { id } });
