@@ -10,6 +10,7 @@ export default function UploadForm() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
@@ -18,6 +19,26 @@ export default function UploadForm() {
 
   const handlePdfChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      setError("Only PDF files are allowed.");
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      setError("PDF must be under 50 MB.");
+      return;
+    }
+    setError("");
+    setPdfFile(file);
+    if (!title) {
+      setTitle(file.name.replace(/\.pdf$/i, "").replace(/[-_]/g, " "));
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
     if (!file) return;
     if (!file.name.toLowerCase().endsWith(".pdf")) {
       setError("Only PDF files are allowed.");
@@ -96,9 +117,14 @@ export default function UploadForm() {
         </label>
         <div
           onClick={() => pdfInputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
           className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
             pdfFile
               ? "border-indigo-500/50 bg-indigo-900/10"
+              : isDragging
+              ? "border-indigo-500 bg-indigo-900/20"
               : "border-slate-700 hover:border-slate-600"
           }`}
         >

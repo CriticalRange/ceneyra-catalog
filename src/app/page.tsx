@@ -11,17 +11,17 @@ export default async function HomePage() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
       <SiteHeader />
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-white border-b border-slate-100">
+        <section className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 text-center">
-            <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white tracking-tight">
               Digital Catalogs
             </h1>
-            <p className="mt-4 text-lg text-slate-500 max-w-xl mx-auto">
+            <p className="mt-4 text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
               Browse our collection of interactive flipbook catalogs. Click any
               cover to open and flip through the pages.
             </p>
@@ -33,7 +33,7 @@ export default async function HomePage() {
           {catalogs.length === 0 ? (
             <div className="text-center py-24">
               <svg
-                className="w-16 h-16 text-slate-300 mx-auto mb-4"
+                className="w-16 h-16 text-slate-300 dark:text-slate-700 mx-auto mb-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -72,7 +72,7 @@ export default async function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-100 bg-white">
+      <footer className="border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center">
           <p className="text-sm text-slate-400">
             &copy; {new Date().getFullYear()} Ceneyra Catalog. All rights

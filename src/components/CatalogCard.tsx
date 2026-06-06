@@ -39,9 +39,9 @@ export default function CatalogCard({
 
   return (
     <Link href={`/catalog/${slug}`} className="group block">
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
         {/* Thumbnail */}
-        <div className="relative aspect-[3/4] bg-slate-50 overflow-hidden">
+        <div className="relative aspect-[3/4] bg-slate-50 dark:bg-slate-700 overflow-hidden">
           {coverImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -82,15 +82,15 @@ export default function CatalogCard({
 
         {/* Info */}
         <div className="p-4">
-          <h3 className="font-semibold text-slate-900 text-sm leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors">
+          <h3 className="font-semibold text-slate-900 dark:text-white text-sm leading-snug line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
             {title}
           </h3>
           {description && (
-            <p className="mt-1 text-xs text-slate-500 line-clamp-2">
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
               {description}
             </p>
           )}
-          <p className="mt-2 text-xs text-slate-400">{formattedDate}</p>
+          <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">{formattedDate}</p>
         </div>
       </div>
     </Link>
@@ -99,7 +99,7 @@ export default function CatalogCard({
 
 function PDFPlaceholder({ title }: { title: string }) {
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100 p-6">
+    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100 dark:from-indigo-950 dark:to-slate-800 p-6">
       <svg
         className="w-16 h-16 text-indigo-300 mb-3"
         fill="none"
