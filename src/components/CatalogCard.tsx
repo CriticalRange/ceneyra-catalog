@@ -16,6 +16,7 @@ interface CatalogCardProps {
   coverImage?: string | null;
   filepath?: string;
   pageCount: number;
+  isActive: boolean;
   createdAt: string;
 }
 
@@ -26,6 +27,7 @@ export default function CatalogCard({
   coverImage,
   filepath,
   pageCount,
+  isActive,
   createdAt,
 }: CatalogCardProps) {
   const [pdfLoaded, setPdfLoaded] = useState(false);
@@ -37,11 +39,13 @@ export default function CatalogCard({
     day: "numeric",
   });
 
+  const href = isActive ? "/view" : `/catalog/${slug}`;
+
   return (
-    <Link href={`/catalog/${slug}`} className="group block">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
+    <Link href={href} className="group block">
+      <div className="bg-white dark:bg-white/5 rounded-xl border border-black/8 dark:border-white/8 overflow-hidden transition-all duration-200 group-hover:border-black/20 dark:group-hover:border-white/20 group-hover:-translate-y-0.5">
         {/* Thumbnail */}
-        <div className="relative aspect-[3/4] bg-slate-50 dark:bg-slate-700 overflow-hidden">
+        <div className="relative aspect-[3/4] bg-black/4 dark:bg-white/4 overflow-hidden">
           {coverImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -72,25 +76,33 @@ export default function CatalogCard({
             <PDFPlaceholder title={title} />
           )}
 
-          {/* Page count badge */}
+          {/* Badges */}
+          <div className="absolute top-2 left-2 flex flex-col gap-1">
+            {isActive && (
+              <span className="bg-black dark:bg-white text-white dark:text-black text-xs font-semibold px-2 py-0.5 rounded-full">
+                Active
+              </span>
+            )}
+          </div>
+
           {pageCount > 0 && (
-            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm">
-              {pageCount} pages
+            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full backdrop-blur-sm">
+              {pageCount}p
             </div>
           )}
         </div>
 
         {/* Info */}
-        <div className="p-4">
-          <h3 className="font-semibold text-slate-900 dark:text-white text-sm leading-snug line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+        <div className="p-3">
+          <h3 className="font-medium text-black dark:text-white text-sm leading-snug line-clamp-2">
             {title}
           </h3>
           {description && (
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+            <p className="mt-0.5 text-xs text-black/40 dark:text-white/40 line-clamp-1">
               {description}
             </p>
           )}
-          <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">{formattedDate}</p>
+          <p className="mt-1.5 text-xs text-black/30 dark:text-white/30">{formattedDate}</p>
         </div>
       </div>
     </Link>
@@ -99,9 +111,9 @@ export default function CatalogCard({
 
 function PDFPlaceholder({ title }: { title: string }) {
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100 dark:from-indigo-950 dark:to-slate-800 p-6">
+    <div className="w-full h-full flex flex-col items-center justify-center bg-black/4 dark:bg-white/4 p-6">
       <svg
-        className="w-16 h-16 text-indigo-300 mb-3"
+        className="w-12 h-12 text-black/20 dark:text-white/20 mb-3"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -113,7 +125,7 @@ function PDFPlaceholder({ title }: { title: string }) {
           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
         />
       </svg>
-      <span className="text-xs text-slate-400 text-center line-clamp-2">
+      <span className="text-xs text-black/30 dark:text-white/30 text-center line-clamp-2">
         {title}
       </span>
     </div>

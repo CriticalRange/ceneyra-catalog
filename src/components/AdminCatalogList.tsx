@@ -13,6 +13,7 @@ interface CatalogItem {
   coverImage?: string | null;
   pageCount: number;
   isPublished: boolean;
+  isActive: boolean;
   createdAt: string;
 }
 
@@ -24,6 +25,7 @@ export default function AdminCatalogList({
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [settingActiveId, setSettingActiveId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -45,6 +47,17 @@ export default function AdminCatalogList({
     });
     router.refresh();
     setTogglingId(null);
+  };
+
+  const handleSetActive = async (id: string) => {
+    setSettingActiveId(id);
+    await fetch(`/api/catalogs/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: true }),
+    });
+    router.refresh();
+    setSettingActiveId(null);
   };
 
   const startEdit = (catalog: CatalogItem) => {
@@ -83,9 +96,7 @@ export default function AdminCatalogList({
           />
         </svg>
         <p className="text-slate-400 font-medium">No catalogs yet</p>
-        <p className="text-slate-600 text-sm mt-1">
-          Upload a PDF to get started.
-        </p>
+        <p className="text-slate-600 text-sm mt-1">Upload a PDF to get started.</p>
       </div>
     );
   }
@@ -95,9 +106,11 @@ export default function AdminCatalogList({
       {catalogs.map((catalog) => (
         <div
           key={catalog.id}
-          className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-start gap-4"
+          className={`bg-slate-900 border rounded-xl p-4 flex items-start gap-4 ${
+            catalog.isActive ? "border-white/20" : "border-slate-800"
+          }`}
         >
-          {/* PDF icon / mini preview */}
+          {/* Thumbnail */}
           <div className="flex-shrink-0 w-14 h-20 bg-slate-800 rounded-lg flex items-center justify-center overflow-hidden border border-slate-700">
             {catalog.coverImage ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -131,21 +144,21 @@ export default function AdminCatalogList({
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white/30"
                   placeholder="Title"
                 />
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   rows={2}
-                  className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white/30 resize-none"
                   placeholder="Description (optional)"
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleSaveEdit(catalog.id)}
                     disabled={!editTitle.trim()}
-                    className="px-3 py-1 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                    className="px-3 py-1 bg-white text-black text-xs rounded-lg hover:bg-white/90 disabled:opacity-50"
                   >
                     Save
                   </button>
@@ -163,10 +176,15 @@ export default function AdminCatalogList({
                   <h3 className="font-semibold text-white text-sm truncate">
                     {catalog.title}
                   </h3>
+                  {catalog.isActive && (
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-white text-black">
+                      Active
+                    </span>
+                  )}
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                       catalog.isPublished
-                        ? "bg-emerald-900/50 text-emerald-400 border border-emerald-800/50"
+                        ? "bg-slate-700 text-slate-300 border border-slate-600"
                         : "bg-slate-800 text-slate-500 border border-slate-700"
                     }`}
                   >
@@ -180,9 +198,7 @@ export default function AdminCatalogList({
                 )}
                 <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-600">
                   <span>
-                    {catalog.pageCount > 0
-                      ? `${catalog.pageCount} pages`
-                      : "— pages"}
+                    {catalog.pageCount > 0 ? `${catalog.pageCount} pages` : "— pages"}
                   </span>
                   <span>
                     {new Date(catalog.createdAt).toLocaleDateString("en-US", {
@@ -199,24 +215,25 @@ export default function AdminCatalogList({
           {/* Actions */}
           {editingId !== catalog.id && (
             <div className="flex items-center gap-1 flex-shrink-0">
+              {!catalog.isActive && (
+                <button
+                  onClick={() => handleSetActive(catalog.id)}
+                  disabled={settingActiveId === catalog.id}
+                  className="px-2 py-1 text-xs text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 rounded-lg transition-colors disabled:opacity-40"
+                  title="Set as Active"
+                >
+                  {settingActiveId === catalog.id ? "…" : "Set Active"}
+                </button>
+              )}
+
               <Link
-                href={`/catalog/${catalog.slug}`}
+                href={catalog.isActive ? "/view" : `/catalog/${catalog.slug}`}
                 target="_blank"
                 className="p-2 text-slate-500 hover:text-slate-300 rounded-lg hover:bg-slate-800 transition-colors"
                 title="View"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                  />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </Link>
 
@@ -225,18 +242,8 @@ export default function AdminCatalogList({
                 className="p-2 text-slate-500 hover:text-slate-300 rounded-lg hover:bg-slate-800 transition-colors"
                 title="Edit"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </button>
 
@@ -267,18 +274,8 @@ export default function AdminCatalogList({
                 {deletingId === catalog.id ? (
                   <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                 )}
               </button>

@@ -17,6 +17,7 @@ model Catalog {
   coverImage  String?
   pageCount   Int      @default(0)
   isPublished Boolean  @default(true)
+  isActive    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

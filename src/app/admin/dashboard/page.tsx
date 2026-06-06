@@ -31,7 +31,7 @@ export default async function AdminDashboardPage() {
           </div>
           <a
             href="/admin/upload"
-            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
+            className="px-4 py-2 bg-white text-black text-sm font-medium rounded-xl hover:bg-white/90 transition-colors"
           >
             + Upload New
           </a>
@@ -47,6 +47,7 @@ export default async function AdminDashboardPage() {
             coverImage: c.coverImage,
             pageCount: c.pageCount,
             isPublished: c.isPublished,
+            isActive: c.isActive,
             createdAt: c.createdAt.toISOString(),
           }))}
         />

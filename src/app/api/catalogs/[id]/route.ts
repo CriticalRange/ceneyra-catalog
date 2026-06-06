@@ -27,7 +27,11 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const { title, description, isPublished } = body;
+  const { title, description, isPublished, isActive } = body;
+
+  if (isActive === true) {
+    await prisma.catalog.updateMany({ data: { isActive: false } });
+  }
 
   const catalog = await prisma.catalog.update({
     where: { id },
@@ -35,6 +39,7 @@ export async function PATCH(
       ...(title !== undefined && { title }),
       ...(description !== undefined && { description }),
       ...(isPublished !== undefined && { isPublished }),
+      ...(isActive !== undefined && { isActive }),
     },
   });
 
