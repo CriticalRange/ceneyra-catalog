@@ -8,7 +8,7 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import React from "react";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 interface FlipBookViewerProps {
   pdfUrl: string;
@@ -40,6 +40,8 @@ FlipPage.displayName = "FlipPage";
 
 export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
+  const [pdfLoading, setPdfLoading] = useState(true);
+  const [pdfError, setPdfError] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [atCover, setAtCover] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
@@ -71,6 +73,7 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
+    setPdfLoading(false);
   }, []);
 
   const onFlip = useCallback((e: { data: number }) => {
@@ -174,6 +177,22 @@ const bookW = atCover ? PAGE_WIDTH : PAGE_WIDTH * 2;
                 flexShrink: 0,
                 transition: "width 0.7s ease",
               }}>
+                {/* Loading / error overlay — always centered in the sizer */}
+                {(pdfLoading || pdfError) && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center bg-white rounded-lg shadow-lg"
+                  >
+                    {pdfError ? (
+                      <p className="text-red-500 text-sm">Failed to load PDF.</p>
+                    ) : (
+                      <div className="text-center">
+                        <div className="w-12 h-12 border-4 border-[#172c4f]/20 border-t-[#172c4f] rounded-full animate-spin mx-auto mb-3" />
+                        <p className="text-sm text-slate-500">Loading catalog…</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div
                   className="flipbook-viewport overflow-hidden absolute top-0 left-0"
                   style={{
@@ -194,25 +213,9 @@ const bookW = atCover ? PAGE_WIDTH : PAGE_WIDTH * 2;
                     <Document
                       file={pdfUrl}
                       onLoadSuccess={onDocumentLoadSuccess}
-                      loading={
-                        <div
-                          className="flex items-center justify-center bg-white rounded-lg shadow-lg"
-                          style={{ width: PAGE_WIDTH * 2, height: PAGE_HEIGHT }}
-                        >
-                          <div className="text-center">
-                            <div className="w-12 h-12 border-4 border-[#172c4f]/20 border-t-[#172c4f] rounded-full animate-spin mx-auto mb-3" />
-                            <p className="text-sm text-slate-500">Loading catalog…</p>
-                          </div>
-                        </div>
-                      }
-                      error={
-                        <div
-                          className="flex items-center justify-center bg-white rounded-lg shadow-lg"
-                          style={{ width: PAGE_WIDTH * 2, height: PAGE_HEIGHT }}
-                        >
-                          <p className="text-red-500 text-sm">Failed to load PDF.</p>
-                        </div>
-                      }
+                      onLoadError={() => { setPdfLoading(false); setPdfError(true); }}
+                      loading={null}
+                      error={null}
                     >
                       {numPages > 0 && (
                         <HTMLFlipBook
