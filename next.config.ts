@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' blob: data: https:",
               "font-src 'self'",
-              "connect-src 'self' https://*.neon.tech https://unpkg.com https://*.blob.vercel-storage.com",
+              "connect-src 'self' https://*.neon.tech https://unpkg.com https://blob.vercel-storage.com https://*.blob.vercel-storage.com",
               "worker-src 'self' blob: https://unpkg.com",
               "frame-ancestors 'none'",
             ].join("; "),
