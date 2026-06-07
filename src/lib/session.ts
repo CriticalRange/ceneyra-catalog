@@ -12,7 +12,7 @@ const sessionOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
-    maxAge: 60 * 60 * 24, // 24 hours
+    maxAge: 60 * 60, // 1 hour
   },
 };
 

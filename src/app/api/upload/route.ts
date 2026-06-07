@@ -36,13 +36,29 @@ export async function POST(request: NextRequest) {
 
   // Save catalog metadata once client-side uploads are complete
   const { title, description, pdfUrl, pdfName, coverUrl } = body;
-  if (!title?.trim() || !pdfUrl) {
-    try { await del(pdfUrl); } catch { /* ignore */ }
+
+  const cleanup = async () => {
+    if (pdfUrl) try { await del(pdfUrl); } catch { /* ignore */ }
     if (coverUrl) try { await del(coverUrl); } catch { /* ignore */ }
-    return NextResponse.json(
-      { error: "PDF URL and title are required" },
-      { status: 400 }
-    );
+  };
+
+  if (!title?.trim() || !pdfUrl) {
+    await cleanup();
+    return NextResponse.json({ error: "PDF URL and title are required" }, { status: 400 });
+  }
+
+  // Validate URLs are from Vercel Blob (prevent arbitrary URL injection)
+  const blobHost = "public.blob.vercel-storage.com";
+  if (!pdfUrl.includes(blobHost) || (coverUrl && !coverUrl.includes(blobHost))) {
+    await cleanup();
+    return NextResponse.json({ error: "Invalid file source" }, { status: 400 });
+  }
+
+  // Cap total catalog count
+  const total = await prisma.catalog.count();
+  if (total >= 50) {
+    await cleanup();
+    return NextResponse.json({ error: "Catalog limit reached" }, { status: 400 });
   }
 
   const hasActive = await prisma.catalog.count({ where: { isActive: true } });
