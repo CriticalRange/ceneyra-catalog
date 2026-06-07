@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import ThemeProvider from "@/components/ThemeProvider";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "Ceneyra Catalog — Digital Flipbook Viewer",
+  title: "Ceneyra Catalog — Digital Flipbook View",
   description:
-    "Browse and view beautiful digital catalogs with smooth page-flip animations.",
+    "Product Catalog for Ceneyra Limited..",
 };
 
 export default function RootLayout({
@@ -16,7 +16,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body className="min-h-full flex flex-col antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+        {children}
+        <Toaster richColors theme="system" />
       </body>
     </html>
   );

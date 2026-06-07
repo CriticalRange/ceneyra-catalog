@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { toast } from "@/components/Toast";
 import HTMLFlipBook from "react-pageflip";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -17,6 +18,8 @@ interface FlipBookViewerProps {
 type PageFlipApi = {
   flipNext: () => void;
   flipPrev: () => void;
+  flip: (page: number) => void;
+  getCurrentPageIndex: () => number;
 };
 
 const FlipPage = React.forwardRef<
@@ -39,13 +42,29 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [atCover, setAtCover] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
+  const [numVisible, setNumVisible] = useState(true);
   const [zoom, setZoom] = useState(1);
-  const flipBookRef = useRef<{
-    pageFlip: () => PageFlipApi | undefined;
-  } | null>(null);
+  const flipBookRef = useRef<{ pageFlip: () => PageFlipApi | undefined } | null>(null);
+  const flipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flipEnableTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [editingCounter, setEditingCounter] = useState(false);
+  const [counterInput, setCounterInput] = useState("");
 
   const PAGE_WIDTH = 520;
   const PAGE_HEIGHT = 735;
+
+  useEffect(() => {
+    const computeZoom = () => {
+      const scaleW = (window.innerWidth - 80) / (PAGE_WIDTH * 2);
+      const scaleH = (window.innerHeight - 220) / PAGE_HEIGHT;
+      setZoom(Math.min(scaleW, scaleH, 1));
+    };
+    computeZoom();
+    window.addEventListener("resize", computeZoom);
+    return () => window.removeEventListener("resize", computeZoom);
+  }, []);
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -54,172 +73,247 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
   const onFlip = useCallback((e: { data: number }) => {
     setCurrentPage(e.data + 1);
     setAtCover(e.data === 0);
-  }, []);
+    setAtEnd(e.data >= numPages - 2);
+    if (flipTimeoutRef.current) clearTimeout(flipTimeoutRef.current);
+    if (flipEnableTimeoutRef.current) clearTimeout(flipEnableTimeoutRef.current);
+    flipEnableTimeoutRef.current = setTimeout(() => {
+      setIsFlipping(false);
+    }, 600);
+    flipTimeoutRef.current = setTimeout(() => {
+      setNumVisible(true);
+    }, 700);
+  }, [numPages]);
 
   const goToNextPage = () => {
+    if (isFlipping) return;
+    setIsFlipping(true);
+    setNumVisible(false);
     if (atCover) setAtCover(false);
     flipBookRef.current?.pageFlip()?.flipNext();
   };
+
   const goToPrevPage = () => {
+    if (isFlipping) return;
+    setIsFlipping(true);
+    setNumVisible(false);
     if (currentPage <= 2) setAtCover(true);
+    setAtEnd(false);
     flipBookRef.current?.pageFlip()?.flipPrev();
   };
 
+  const openCounterEdit = () => {
+    setCounterInput(String(currentPage));
+    setEditingCounter(true);
+  };
+
+  const commitCounterEdit = () => {
+    let page = parseInt(counterInput, 10);
+    if (page === 0) page = 1;
+    const alreadyVisible = page === currentPage || (!atCover && page === currentPage + 1);
+    if (isNaN(page) || page < 1 || page > numPages) {
+      toast({ message: `Page must be between 1 and ${numPages}`, type: "error", duration: 3000 });
+      setEditingCounter(false);
+      return;
+    }
+    if (!alreadyVisible) {
+      setIsFlipping(true);
+      setNumVisible(false);
+      if (page === 1) setAtCover(true);
+      else setAtCover(false);
+      flipBookRef.current?.pageFlip()?.flip(page - 1);
+    }
+    setEditingCounter(false);
+  };
+
+  const numStyle: React.CSSProperties = {
+    transition: "opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+    opacity: numVisible ? 1 : 0,
+  };
+
   return (
-    <div className="flex flex-col items-center gap-4 w-full">
+    <div className="flex flex-col items-center justify-center gap-4 w-full h-full">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+        <h1 className="text-2xl font-bold text-black dark:text-white">{title}</h1>
       </div>
 
-      {/* Zoom controls */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         <button
-          onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}
-          className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
-          aria-label="Zoom out"
+          onClick={goToPrevPage}
+          disabled={currentPage <= 1 || numPages === 0 || isFlipping}
+          className="w-10 h-10 rounded-full flex items-center justify-center shadow-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all text-white flex-shrink-0"
+          style={{ background: "#172c4f" }}
+          aria-label="Previous page"
         >
-          −
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
         </button>
-        <span className="text-sm text-slate-600 w-14 text-center">
-          {Math.round(zoom * 100)}%
-        </span>
-        <button
-          onClick={() => setZoom((z) => Math.min(2, z + 0.1))}
-          className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
-          aria-label="Zoom in"
-        >
-          +
-        </button>
-        <button
-          onClick={() => setZoom(1)}
-          className="text-xs text-slate-500 hover:text-slate-700 px-2 py-1 rounded border border-slate-200 hover:bg-slate-50 transition-colors"
-        >
-          Reset
-        </button>
-      </div>
 
-      {/* Flipbook */}
-      <div
-        className="flipbook-viewport overflow-hidden"
-        style={{
-          width: atCover ? PAGE_WIDTH : PAGE_WIDTH * 2,
-          transform: `scale(${zoom})`,
-          transformOrigin: "top center",
-          transition: "width 0.7s ease",
-        }}
-      >
-        <div
-          className="flipbook-wrapper relative"
-          style={{
-            width: PAGE_WIDTH * 2,
-            transform: `translateX(${atCover ? -PAGE_WIDTH : 0}px)`,
-            transition: "transform 0.7s ease",
-          }}
-        >
-          <Document
-            file={pdfUrl}
-            onLoadSuccess={onDocumentLoadSuccess}
-            loading={
-              <div
-                className="flex items-center justify-center bg-white rounded-lg shadow-lg"
-                style={{ width: PAGE_WIDTH * 2, height: PAGE_HEIGHT }}
-              >
-                <div className="text-center">
-                  <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-3" />
-                  <p className="text-sm text-slate-500">Loading catalog…</p>
-                </div>
-              </div>
-            }
-            error={
-              <div
-                className="flex items-center justify-center bg-white rounded-lg shadow-lg"
-                style={{ width: PAGE_WIDTH * 2, height: PAGE_HEIGHT }}
-              >
-                <p className="text-red-500 text-sm">Failed to load PDF.</p>
-              </div>
-            }
+        <div className="flex flex-col items-center">
+          <div
+            className="flipbook-viewport overflow-hidden"
+            style={{
+              width: atCover ? PAGE_WIDTH : PAGE_WIDTH * 2,
+              transform: `scale(${zoom})`,
+              transformOrigin: "top center",
+              transition: "width 0.7s ease",
+            }}
           >
-            {numPages > 0 && (
-              <HTMLFlipBook
-                ref={flipBookRef}
-                width={PAGE_WIDTH}
-                height={PAGE_HEIGHT}
-                size="fixed"
-                minWidth={300}
-                maxWidth={PAGE_WIDTH}
-                minHeight={400}
-                maxHeight={PAGE_HEIGHT}
-                showCover={true}
-                flippingTime={700}
-                style={{ margin: "0 auto" }}
-                startPage={0}
-                drawShadow={true}
-                usePortrait={false}
-                startZIndex={0}
-                autoSize={true}
-                maxShadowOpacity={0.4}
-                mobileScrollSupport={true}
-                clickEventForward={true}
-                useMouseEvents={true}
-              swipeDistance={30}
-              showPageCorners={false}
-              disableFlipByClick={false}
-              onChangeState={(e: { data: string }) => {
-                if (
-                  atCover &&
-                  (e.data === "flipping" || e.data === "user_fold" || e.data === "fold_corner")
-                ) {
-                  setAtCover(false);
-                }
+            <div
+              className="flipbook-wrapper relative"
+              style={{
+                width: PAGE_WIDTH * 2,
+                transform: `translateX(${atCover ? -PAGE_WIDTH : 0}px)`,
+                transition: "transform 0.7s ease",
               }}
-              onFlip={onFlip}
-              className="shadow-2xl rounded-sm"
             >
-                {Array.from({ length: numPages }, (_, i) => (
-                  <FlipPage
-                    key={i}
-                    pageNumber={i + 1}
+              <Document
+                file={pdfUrl}
+                onLoadSuccess={onDocumentLoadSuccess}
+                loading={
+                  <div
+                    className="flex items-center justify-center bg-white rounded-lg shadow-lg"
+                    style={{ width: PAGE_WIDTH * 2, height: PAGE_HEIGHT }}
+                  >
+                    <div className="text-center">
+                      <div className="w-12 h-12 border-4 border-[#172c4f]/20 border-t-[#172c4f] rounded-full animate-spin mx-auto mb-3" />
+                      <p className="text-sm text-slate-500">Loading catalog…</p>
+                    </div>
+                  </div>
+                }
+                error={
+                  <div
+                    className="flex items-center justify-center bg-white rounded-lg shadow-lg"
+                    style={{ width: PAGE_WIDTH * 2, height: PAGE_HEIGHT }}
+                  >
+                    <p className="text-red-500 text-sm">Failed to load PDF.</p>
+                  </div>
+                }
+              >
+                {numPages > 0 && (
+                  <HTMLFlipBook
+                    ref={flipBookRef}
                     width={PAGE_WIDTH}
                     height={PAGE_HEIGHT}
-                  />
-                ))}
-              </HTMLFlipBook>
-            )}
-          </Document>
+                    size="fixed"
+                    minWidth={300}
+                    maxWidth={PAGE_WIDTH}
+                    minHeight={200}
+                    maxHeight={PAGE_HEIGHT}
+                    showCover={true}
+                    flippingTime={700}
+                    style={{ margin: "0 auto" }}
+                    startPage={0}
+                    drawShadow={true}
+                    usePortrait={false}
+                    startZIndex={0}
+                    autoSize={true}
+                    maxShadowOpacity={0.4}
+                    mobileScrollSupport={true}
+                    clickEventForward={true}
+                    useMouseEvents={true}
+                    swipeDistance={30}
+                    showPageCorners={false}
+                    disableFlipByClick={false}
+                    onChangeState={(e: { data: string }) => {
+                      if (atCover && (e.data === "flipping" || e.data === "user_fold" || e.data === "fold_corner")) {
+                        setAtCover(false);
+                      }
+                      if (e.data === "read") {
+                        if (flipTimeoutRef.current) clearTimeout(flipTimeoutRef.current);
+                        if (flipEnableTimeoutRef.current) clearTimeout(flipEnableTimeoutRef.current);
+                        const idx = flipBookRef.current?.pageFlip()?.getCurrentPageIndex() ?? 0;
+                        setCurrentPage(idx + 1);
+                        setAtCover(idx === 0);
+                        setAtEnd(idx >= numPages - 2);
+                        setIsFlipping(false);
+                        setNumVisible(true);
+                      }
+                    }}
+                    onFlip={onFlip}
+                    className="shadow-2xl rounded-sm"
+                  >
+                    {Array.from({ length: numPages }, (_, i) => (
+                      <FlipPage
+                        key={i}
+                        pageNumber={i + 1}
+                        width={PAGE_WIDTH}
+                        height={PAGE_HEIGHT}
+                      />
+                    ))}
+                  </HTMLFlipBook>
+                )}
+              </Document>
+            </div>
+          </div>
+
+          {numPages > 0 && (
+            <div
+              className="flex items-center justify-center"
+              style={{
+                width: atCover ? PAGE_WIDTH : PAGE_WIDTH * 2,
+                transform: `scale(${zoom})`,
+                transformOrigin: "top center",
+                marginTop: PAGE_HEIGHT * (zoom - 1) + 12,
+                transition: "width 0.7s ease",
+              }}
+            >
+              {editingCounter ? (
+                <input
+                  autoFocus
+                  type="text"
+                  inputMode="numeric"
+                  value={counterInput}
+                  onChange={(e) => setCounterInput(e.target.value.replace(/\D/g, ""))}
+                  onKeyDown={(e) => { if (e.key === "Enter") commitCounterEdit(); if (e.key === "Escape") setEditingCounter(false); }}
+                  onFocus={(e) => e.target.select()}
+                  onBlur={() => setEditingCounter(false)}
+                  className="h-9 px-4 rounded-full text-sm font-semibold text-center tabular-nums outline-none border-2 border-white/60 w-24"
+                  style={{ background: "#172c4f", color: "#fff" }}
+                />
+              ) : (
+                <span
+                  onClick={openCounterEdit}
+                  className="flex items-center justify-center h-9 px-4 rounded-full text-sm font-semibold text-white tabular-nums cursor-pointer hover:opacity-80 transition-opacity"
+                  style={{ ...numStyle, background: "#172c4f" }}
+                  title="Click to jump to page"
+                >
+                  {atCover
+                    ? `${currentPage} / ${numPages}`
+                    : `${currentPage}-${Math.min(currentPage + 1, numPages)} / ${numPages}`}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={goToNextPage}
+          disabled={atEnd || numPages === 0 || isFlipping}
+          className="w-10 h-10 rounded-full flex items-center justify-center shadow-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all text-white flex-shrink-0"
+          style={{ background: "#172c4f" }}
+          aria-label="Next page"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr auto 1fr", width: PAGE_WIDTH * zoom }}>
+        <div className="flex justify-start">
+          <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))} className="w-10 h-10 rounded-full flex items-center justify-center text-sm cursor-pointer shadow-sm" style={{ background: "#172c4f", color: "#fff" }} aria-label="Zoom out">−</button>
+        </div>
+        <span className="text-sm tabular-nums font-semibold text-center text-white">{Math.round(zoom * 100)}%</span>
+        <div className="flex justify-end gap-2">
+          <button onClick={() => setZoom((z) => Math.min(2, z + 0.1))} className="w-10 h-10 rounded-full flex items-center justify-center text-sm cursor-pointer shadow-sm" style={{ background: "#172c4f", color: "#fff" }} aria-label="Zoom in">+</button>
+          <button onClick={() => setZoom(1)} className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer shadow-sm" style={{ background: "#172c4f", color: "#fff" }} aria-label="Reset zoom">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          </button>
         </div>
       </div>
 
-      {numPages > 0 && (
-        <div className="flex items-center gap-4 mt-2">
-          <button
-            onClick={goToPrevPage}
-            disabled={currentPage <= 1}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl shadow-sm hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-medium text-sm"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Previous
-          </button>
-
-          <span className="text-sm text-slate-500 tabular-nums">
-            {currentPage} / {numPages}
-          </span>
-
-          <button
-            onClick={goToNextPage}
-            disabled={currentPage >= numPages}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-medium text-sm"
-          >
-            Next
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-      )}
-
-      <p className="text-xs text-slate-400 mt-1">
+      <p className="text-xs text-slate-200 mt-1">
         Tip: Click page corners to flip, or use the buttons
       </p>
     </div>

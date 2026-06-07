@@ -8,7 +8,6 @@ interface CatalogItem {
   id: string;
   title: string;
   description?: string | null;
-  slug: string;
   filepath: string;
   coverImage?: string | null;
   pageCount: number;
@@ -81,9 +80,9 @@ export default function AdminCatalogList({
 
   if (catalogs.length === 0) {
     return (
-      <div className="text-center py-20 bg-slate-900 rounded-2xl border border-slate-800">
+      <div className="text-center py-20 bg-black/[0.03] dark:bg-white/[0.04] rounded-2xl border border-black/10 dark:border-white/10">
         <svg
-          className="w-14 h-14 text-slate-700 mx-auto mb-4"
+          className="w-14 h-14 text-black/20 dark:text-white/20 mx-auto mb-4"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -95,8 +94,8 @@ export default function AdminCatalogList({
             d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
           />
         </svg>
-        <p className="text-slate-400 font-medium">No catalogs yet</p>
-        <p className="text-slate-600 text-sm mt-1">Upload a PDF to get started.</p>
+        <p className="text-black/60 dark:text-white/60 font-medium">No catalogs yet</p>
+        <p className="text-black/35 dark:text-white/35 text-sm mt-1">Upload a PDF to get started.</p>
       </div>
     );
   }
@@ -106,12 +105,12 @@ export default function AdminCatalogList({
       {catalogs.map((catalog) => (
         <div
           key={catalog.id}
-          className={`bg-slate-900 border rounded-xl p-4 flex items-start gap-4 ${
-            catalog.isActive ? "border-white/20" : "border-slate-800"
+          className={`bg-white dark:bg-white/[0.04] border rounded-xl p-4 flex items-start gap-4 ${
+            catalog.isActive ? "border-black/25 dark:border-white/25" : "border-black/10 dark:border-white/10"
           }`}
         >
           {/* Thumbnail */}
-          <div className="flex-shrink-0 w-14 h-20 bg-slate-800 rounded-lg flex items-center justify-center overflow-hidden border border-slate-700">
+          <div className="flex-shrink-0 w-14 h-20 bg-black/[0.04] dark:bg-white/[0.06] rounded-lg flex items-center justify-center overflow-hidden border border-black/10 dark:border-white/10">
             {catalog.coverImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -121,7 +120,7 @@ export default function AdminCatalogList({
               />
             ) : (
               <svg
-                className="w-6 h-6 text-slate-600"
+                className="w-6 h-6 text-black/25 dark:text-white/25"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -144,27 +143,27 @@ export default function AdminCatalogList({
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white/30"
+                  className="w-full px-3 py-1.5 bg-white dark:bg-black border border-black/15 dark:border-white/15 text-black dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/20 dark:focus:ring-white/25"
                   placeholder="Title"
                 />
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   rows={2}
-                  className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white/30 resize-none"
+                  className="w-full px-3 py-1.5 bg-white dark:bg-black border border-black/15 dark:border-white/15 text-black dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/20 dark:focus:ring-white/25 resize-none"
                   placeholder="Description (optional)"
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleSaveEdit(catalog.id)}
                     disabled={!editTitle.trim()}
-                    className="px-3 py-1 bg-white text-black text-xs rounded-lg hover:bg-white/90 disabled:opacity-50"
+                    className="px-3 py-1 bg-black text-white dark:bg-white dark:text-black text-xs rounded-lg hover:opacity-90 disabled:opacity-50"
                   >
                     Save
                   </button>
                   <button
                     onClick={() => setEditingId(null)}
-                    className="px-3 py-1 bg-slate-700 text-slate-300 text-xs rounded-lg hover:bg-slate-600"
+                    className="px-3 py-1 border border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 text-xs rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
                   >
                     Cancel
                   </button>
@@ -173,30 +172,30 @@ export default function AdminCatalogList({
             ) : (
               <>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-semibold text-white text-sm truncate">
+                  <h3 className="font-semibold text-black dark:text-white text-sm truncate">
                     {catalog.title}
                   </h3>
                   {catalog.isActive && (
-                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-white text-black">
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-black text-white dark:bg-white dark:text-black">
                       Active
                     </span>
                   )}
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                       catalog.isPublished
-                        ? "bg-slate-700 text-slate-300 border border-slate-600"
-                        : "bg-slate-800 text-slate-500 border border-slate-700"
+                        ? "bg-black/[0.06] text-black/55 border border-black/10 dark:bg-white/[0.08] dark:text-white/65 dark:border-white/10"
+                        : "bg-transparent text-black/35 border border-black/10 dark:text-white/35 dark:border-white/10"
                     }`}
                   >
                     {catalog.isPublished ? "Published" : "Draft"}
                   </span>
                 </div>
                 {catalog.description && (
-                  <p className="text-slate-500 text-xs mt-0.5 line-clamp-1">
+                  <p className="text-black/45 dark:text-white/45 text-xs mt-0.5 line-clamp-1">
                     {catalog.description}
                   </p>
                 )}
-                <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-600">
+                <div className="flex items-center gap-3 mt-1.5 text-xs text-black/35 dark:text-white/35">
                   <span>
                     {catalog.pageCount > 0 ? `${catalog.pageCount} pages` : "— pages"}
                   </span>
@@ -219,7 +218,7 @@ export default function AdminCatalogList({
                 <button
                   onClick={() => handleSetActive(catalog.id)}
                   disabled={settingActiveId === catalog.id}
-                  className="px-2 py-1 text-xs text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 rounded-lg transition-colors disabled:opacity-40"
+                  className="px-2 py-1 text-xs text-black/45 hover:text-black border border-black/10 hover:border-black/25 dark:text-white/45 dark:hover:text-white dark:border-white/10 dark:hover:border-white/25 rounded-lg transition-colors disabled:opacity-40"
                   title="Set as Active"
                 >
                   {settingActiveId === catalog.id ? "…" : "Set Active"}
@@ -227,9 +226,9 @@ export default function AdminCatalogList({
               )}
 
               <Link
-                href={catalog.isActive ? "/view" : `/catalog/${catalog.slug}`}
+                href={`/view/${catalog.id}`}
                 target="_blank"
-                className="p-2 text-slate-500 hover:text-slate-300 rounded-lg hover:bg-slate-800 transition-colors"
+                className="p-2 text-black/35 hover:text-black dark:text-white/35 dark:hover:text-white rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                 title="View"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -239,7 +238,7 @@ export default function AdminCatalogList({
 
               <button
                 onClick={() => startEdit(catalog)}
-                className="p-2 text-slate-500 hover:text-slate-300 rounded-lg hover:bg-slate-800 transition-colors"
+                className="p-2 text-black/35 hover:text-black dark:text-white/35 dark:hover:text-white rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                 title="Edit"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -250,7 +249,7 @@ export default function AdminCatalogList({
               <button
                 onClick={() => handleTogglePublish(catalog.id, catalog.isPublished)}
                 disabled={togglingId === catalog.id}
-                className="p-2 text-slate-500 hover:text-slate-300 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-40"
+                className="p-2 text-black/35 hover:text-black dark:text-white/35 dark:hover:text-white rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors disabled:opacity-40"
                 title={catalog.isPublished ? "Unpublish" : "Publish"}
               >
                 {catalog.isPublished ? (
@@ -268,7 +267,7 @@ export default function AdminCatalogList({
               <button
                 onClick={() => handleDelete(catalog.id, catalog.title)}
                 disabled={deletingId === catalog.id}
-                className="p-2 text-slate-500 hover:text-red-400 rounded-lg hover:bg-red-900/20 transition-colors disabled:opacity-40"
+                className="p-2 text-black/35 dark:text-white/35 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors disabled:opacity-40"
                 title="Delete"
               >
                 {deletingId === catalog.id ? (

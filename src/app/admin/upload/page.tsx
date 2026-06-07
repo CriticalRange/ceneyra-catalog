@@ -12,13 +12,13 @@ export default async function AdminUploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
+    <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white flex flex-col">
       <AdminNav />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white">Upload New Catalog</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-black dark:text-white">Upload New Catalog</h1>
+          <p className="text-black/45 dark:text-white/45 text-sm mt-1">
             Upload a PDF file to create a new flipbook catalog.
           </p>
         </div>

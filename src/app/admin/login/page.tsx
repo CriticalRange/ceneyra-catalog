@@ -36,13 +36,12 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+          <div className="w-12 h-12 bg-black dark:bg-white rounded-xl flex items-center justify-center mx-auto mb-4">
             <svg
-              className="w-6 h-6 text-white"
+              className="w-6 h-6 text-white dark:text-black"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -55,19 +54,18 @@ export default function AdminLoginPage() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">Admin Login</h1>
-          <p className="text-slate-400 text-sm mt-1">Ceneyra Catalog</p>
+          <h1 className="text-2xl font-bold text-black dark:text-white">Admin Login</h1>
+          <p className="text-black/45 dark:text-white/45 text-sm mt-1">Ceneyra Catalog</p>
         </div>
 
-        {/* Form */}
         <form
           onSubmit={handleSubmit}
-          className="bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-700"
+          className="rounded-2xl p-6 border border-black/10 dark:border-white/10"
         >
           <div className="mb-4">
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-slate-300 mb-2"
+              className="block text-sm font-medium text-black dark:text-white mb-2"
             >
               Password
             </label>
@@ -78,13 +76,13 @@ export default function AdminLoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoFocus
-              className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-slate-500 text-sm"
+              className="w-full px-4 py-2.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-black dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white placeholder-black/30 dark:placeholder-white/30 text-sm"
               placeholder="Enter admin password"
             />
           </div>
 
           {error && (
-            <p className="text-red-400 text-sm mb-4 bg-red-900/20 border border-red-800/30 rounded-lg px-3 py-2">
+            <p className="text-red-600 dark:text-red-400 text-sm mb-4 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -92,7 +90,8 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={isLoading || !password}
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            className="w-full py-2.5 text-white font-semibold rounded-xl transition-colors hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer text-sm"
+            style={{ background: "#172c4f" }}
           >
             {isLoading ? "Signing in…" : "Sign In"}
           </button>

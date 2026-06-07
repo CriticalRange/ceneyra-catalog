@@ -1,14 +1,15 @@
 @import "tailwindcss";
-@variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
 }
 
-.dark {
-  --background: #0f172a;
-  --foreground: #f8fafc;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    --foreground: #f8fafc;
+  }
 }
 
 body {
@@ -28,3 +29,26 @@ body {
 * {
   box-sizing: border-box;
 }
+
+@keyframes page-num-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes page-num-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes page-num-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.page-num-up   { animation: page-num-up   0.25s ease both; }
+.page-num-down { animation: page-num-down 0.25s ease both; }
+.page-num-fade { animation: page-num-fade 0.3s ease both; }
+
+@keyframes toast-progress {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.toast-progress { animation: toast-progress 3s linear forwards; }

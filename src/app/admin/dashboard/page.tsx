@@ -17,23 +17,24 @@ export default async function AdminDashboardPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
+    <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white flex flex-col">
       <AdminNav />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">Catalogs</h1>
-            <p className="text-slate-400 text-sm mt-0.5">
+            <h1 className="text-2xl font-bold text-black dark:text-white">Catalogs</h1>
+            <p className="text-black/45 dark:text-white/45 text-sm mt-0.5">
               {catalogs.length} total &mdash;{" "}
               {catalogs.filter((c) => c.isPublished).length} published
             </p>
           </div>
           <a
             href="/admin/upload"
-            className="px-4 py-2 bg-white text-black text-sm font-medium rounded-xl hover:bg-white/90 transition-colors"
+            className="px-5 py-2 text-white text-sm font-medium rounded-lg transition-colors hover:opacity-90"
+            style={{ background: "#172c4f" }}
           >
-            + Upload New
+            + New
           </a>
         </div>
 
@@ -42,7 +43,6 @@ export default async function AdminDashboardPage() {
             id: c.id,
             title: c.title,
             description: c.description,
-            slug: c.slug,
             filepath: c.filepath,
             coverImage: c.coverImage,
             pageCount: c.pageCount,

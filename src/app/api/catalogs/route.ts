@@ -9,7 +9,6 @@ export async function GET() {
       id: true,
       title: true,
       description: true,
-      slug: true,
       coverImage: true,
       pageCount: true,
       createdAt: true,

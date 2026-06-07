@@ -11,7 +11,6 @@ model Catalog {
   id          String   @id @default(cuid())
   title       String
   description String?
-  slug        String   @unique
   filename    String
   filepath    String
   coverImage  String?
