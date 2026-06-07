@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { csrfFetch } from "@/lib/useCsrf";
 
 interface CatalogItem {
   id: string;
@@ -32,16 +33,15 @@ export default function AdminCatalogList({
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
     setDeletingId(id);
-    await fetch(`/api/catalogs/${id}`, { method: "DELETE" });
+    await csrfFetch(`/api/catalogs/${id}`, { method: "DELETE" });
     router.refresh();
     setDeletingId(null);
   };
 
   const handleTogglePublish = async (id: string, isPublished: boolean) => {
     setTogglingId(id);
-    await fetch(`/api/catalogs/${id}`, {
+    await csrfFetch(`/api/catalogs/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isPublished: !isPublished }),
     });
     router.refresh();
@@ -50,9 +50,8 @@ export default function AdminCatalogList({
 
   const handleSetActive = async (id: string) => {
     setSettingActiveId(id);
-    await fetch(`/api/catalogs/${id}`, {
+    await csrfFetch(`/api/catalogs/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: true }),
     });
     router.refresh();
@@ -66,9 +65,8 @@ export default function AdminCatalogList({
   };
 
   const handleSaveEdit = async (id: string) => {
-    await fetch(`/api/catalogs/${id}`, {
+    await csrfFetch(`/api/catalogs/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title: editTitle.trim(),
         description: editDescription.trim() || null,

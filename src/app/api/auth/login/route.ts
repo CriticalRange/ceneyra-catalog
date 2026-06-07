@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { compare } from "bcryptjs";
 import { getSession } from "@/lib/session";
 import { checkRateLimit, resetRateLimit } from "@/lib/rateLimit";
 
@@ -23,7 +24,9 @@ export async function POST(request: NextRequest) {
 
   const { password } = await request.json();
 
-  if (!password || password !== process.env.ADMIN_PASSWORD) {
+  const hash = process.env.ADMIN_PASSWORD_HASH ?? "";
+  const valid = hash && await compare(password ?? "", hash);
+  if (!valid) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 

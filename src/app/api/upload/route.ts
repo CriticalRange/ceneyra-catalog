@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { del } from "@vercel/blob";
-import { getSession } from "@/lib/session";
+import { getSession, validateCsrf } from "@/lib/session";
 import { prisma } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
@@ -11,6 +11,13 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
+
+  // CSRF check for metadata save (not needed for Blob handshake — it's a library call)
+  if (body.type !== "blob.generate-client-token" && body.type !== "blob.upload-completed") {
+    if (!await validateCsrf(request)) {
+      return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+    }
+  }
 
   // Vercel Blob client token / completion handshake
   if (

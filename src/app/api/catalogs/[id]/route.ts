@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getSession } from "@/lib/session";
+import { getSession, validateCsrf } from "@/lib/session";
 import { del } from "@vercel/blob";
 
 export async function PATCH(
@@ -8,9 +8,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
-  if (!session.isAdmin) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!session.isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await validateCsrf(request)) return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
 
   const { id } = await params;
   const body = await request.json();
@@ -34,27 +33,22 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
-  if (!session.isAdmin) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!session.isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await validateCsrf(request)) return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
 
   const { id } = await params;
   const catalog = await prisma.catalog.findUnique({ where: { id } });
-  if (!catalog) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  if (!catalog) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Delete files from Vercel Blob
   const toDelete = [catalog.filepath, catalog.coverImage].filter(Boolean) as string[];
   if (toDelete.length) {
     try { await del(toDelete); } catch { /* ignore */ }
   }
 
   await prisma.catalog.delete({ where: { id } });
-
   return NextResponse.json({ ok: true });
 }

@@ -11,8 +11,8 @@
 - [x] Short session expiry (1 hour idle timeout)
 - [x] Validate blob URLs server-side on upload
 - [x] Cap number of catalogs (limit: 50) to prevent storage abuse
-- [ ] CSRF protection on login form
-- [ ] Hash ADMIN_PASSWORD with bcrypt
+- [x] CSRF protection on all mutating admin API routes
+- [x] Hash ADMIN_PASSWORD with bcrypt (env var: ADMIN_PASSWORD_HASH)
 
 ## Low Priority
 

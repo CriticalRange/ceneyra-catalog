@@ -3,6 +3,7 @@
 import { useState, useRef, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
+import { csrfFetch } from "@/lib/useCsrf";
 
 export default function UploadForm() {
   const router = useRouter();
@@ -103,9 +104,8 @@ export default function UploadForm() {
       setProgress(85);
 
       // Save metadata
-      const res = await fetch("/api/upload", {
+      const res = await csrfFetch("/api/upload", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim() || undefined,
