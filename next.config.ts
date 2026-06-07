@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  serverExternalPackages: ["@neondatabase/serverless", "@prisma/adapter-neon"],
   // Allow serving uploaded files with long cache
   async headers() {
     return [
