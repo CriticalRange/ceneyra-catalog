@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { toast } from "@/components/Toast";
 import HTMLFlipBook from "react-pageflip";
 import { Document, Page, pdfjs } from "react-pdf";
@@ -9,6 +9,9 @@ import "react-pdf/dist/Page/TextLayer.css";
 import React from "react";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+
+const PAGE_WIDTH = 520;
+const PAGE_HEIGHT = 735;
 
 interface FlipBookViewerProps {
   pdfUrl: string;
@@ -51,12 +54,18 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
   const flipBookRef = useRef<{ pageFlip: () => PageFlipApi | undefined } | null>(null);
   const flipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flipEnableTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flippingToCoverRef = useRef(false);
+  const lastFlipIndexRef = useRef(0);
   const [isFlipping, setIsFlipping] = useState(false);
   const [editingCounter, setEditingCounter] = useState(false);
   const [counterInput, setCounterInput] = useState("");
 
-  const PAGE_WIDTH = 520;
-  const PAGE_HEIGHT = 735;
+  useEffect(() => {
+    return () => {
+      if (flipTimeoutRef.current) clearTimeout(flipTimeoutRef.current);
+      if (flipEnableTimeoutRef.current) clearTimeout(flipEnableTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const computeZoom = () => {
@@ -77,6 +86,8 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
   }, []);
 
   const onFlip = useCallback((e: { data: number }) => {
+    flippingToCoverRef.current = false;
+    lastFlipIndexRef.current = e.data;
     setCurrentPage(e.data + 1);
     setAtCover(e.data === 0);
     setAtEnd(e.data >= numPages - 2);
@@ -102,7 +113,10 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
     if (isFlipping) return;
     setIsFlipping(true);
     setNumVisible(false);
-    if (currentPage <= 2) setAtCover(true);
+    if (currentPage <= 2) {
+      flippingToCoverRef.current = true;
+      setAtCover(true);
+    }
     setAtEnd(false);
     flipBookRef.current?.pageFlip()?.flipPrev();
   };
@@ -124,8 +138,12 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
     if (!alreadyVisible) {
       setIsFlipping(true);
       setNumVisible(false);
-      if (page === 1) setAtCover(true);
-      else setAtCover(false);
+      if (page === 1) {
+        flippingToCoverRef.current = true;
+        setAtCover(true);
+      } else {
+        setAtCover(false);
+      }
       flipBookRef.current?.pageFlip()?.flip(page - 1);
     }
     setEditingCounter(false);
@@ -137,7 +155,14 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
     opacity: numVisible ? 1 : 0,
   };
 
-const bookW = atCover ? PAGE_WIDTH : PAGE_WIDTH * 2;
+  const bookW = atCover ? PAGE_WIDTH : PAGE_WIDTH * 2;
+
+  const flipPages = useMemo(
+    () => Array.from({ length: numPages }, (_, i) => (
+      <FlipPage key={i} pageNumber={i + 1} width={PAGE_WIDTH} height={PAGE_HEIGHT} />
+    )),
+    [numPages]
+  );
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
@@ -243,13 +268,14 @@ const bookW = atCover ? PAGE_WIDTH : PAGE_WIDTH * 2;
                           showPageCorners={false}
                           disableFlipByClick={false}
                           onChangeState={(e: { data: string }) => {
-                            if (atCover && (e.data === "flipping" || e.data === "user_fold" || e.data === "fold_corner")) {
+                            if (atCover && !flippingToCoverRef.current && (e.data === "flipping" || e.data === "user_fold" || e.data === "fold_corner")) {
                               setAtCover(false);
                             }
                             if (e.data === "read") {
+                              flippingToCoverRef.current = false;
                               if (flipTimeoutRef.current) clearTimeout(flipTimeoutRef.current);
                               if (flipEnableTimeoutRef.current) clearTimeout(flipEnableTimeoutRef.current);
-                              const idx = flipBookRef.current?.pageFlip()?.getCurrentPageIndex() ?? 0;
+                              const idx = lastFlipIndexRef.current;
                               setCurrentPage(idx + 1);
                               setAtCover(idx === 0);
                               setAtEnd(idx >= numPages - 2);
@@ -260,14 +286,7 @@ const bookW = atCover ? PAGE_WIDTH : PAGE_WIDTH * 2;
                           onFlip={onFlip}
                           className="shadow-2xl rounded-sm"
                         >
-                          {Array.from({ length: numPages }, (_, i) => (
-                            <FlipPage
-                              key={i}
-                              pageNumber={i + 1}
-                              width={PAGE_WIDTH}
-                              height={PAGE_HEIGHT}
-                            />
-                          ))}
+                          {flipPages}
                         </HTMLFlipBook>
                       )}
                     </Document>
