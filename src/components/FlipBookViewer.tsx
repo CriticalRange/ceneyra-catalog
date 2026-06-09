@@ -155,13 +155,15 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
     opacity: numVisible ? 1 : 0,
   };
 
-  const bookW = atCover ? PAGE_WIDTH : PAGE_WIDTH * 2;
+  const pageW = Math.round(PAGE_WIDTH * zoom);
+  const pageH = Math.round(PAGE_HEIGHT * zoom);
+  const bookW = atCover ? pageW : pageW * 2;
 
   const flipPages = useMemo(
     () => Array.from({ length: numPages }, (_, i) => (
-      <FlipPage key={i} pageNumber={i + 1} width={PAGE_WIDTH} height={PAGE_HEIGHT} />
+      <FlipPage key={i} pageNumber={i + 1} width={pageW} height={pageH} />
     )),
-    [numPages]
+    [numPages, pageW, pageH]
   );
 
   return (
@@ -178,7 +180,7 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
           {/* Prev + Book + Next */}
           <div className="flex gap-4">
             {/* Prev button — vertically centered with book only */}
-            <div className="flex items-center flex-shrink-0" style={{ height: PAGE_HEIGHT * zoom }}>
+            <div className="flex items-center flex-shrink-0" style={{ height: pageH }}>
               <button
                 onClick={goToPrevPage}
                 disabled={currentPage <= 1 || numPages === 0 || isFlipping}
@@ -196,8 +198,8 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
             <div className="flex flex-col items-center">
               {/* Sizer: claims the correct layout space so scrolling works */}
               <div style={{
-                width: bookW * zoom,
-                height: PAGE_HEIGHT * zoom,
+                width: bookW,
+                height: pageH,
                 position: "relative",
                 flexShrink: 0,
                 transition: "width 0.7s ease",
@@ -222,16 +224,14 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
                   className="flipbook-viewport overflow-hidden absolute top-0 left-0"
                   style={{
                     width: bookW,
-                    transform: `scale(${zoom})`,
-                    transformOrigin: "top left",
                     transition: "width 0.7s ease",
                   }}
                 >
                   <div
                     className="flipbook-wrapper relative"
                     style={{
-                      width: PAGE_WIDTH * 2,
-                      transform: `translateX(${atCover ? -PAGE_WIDTH : 0}px)`,
+                      width: pageW * 2,
+                      transform: `translateX(${atCover ? -pageW : 0}px)`,
                       transition: "transform 0.7s ease",
                     }}
                   >
@@ -244,19 +244,20 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
                     >
                       {numPages > 0 && (
                         <HTMLFlipBook
+                          key={zoom}
                           ref={flipBookRef}
-                          width={PAGE_WIDTH}
-                          height={PAGE_HEIGHT}
+                          width={pageW}
+                          height={pageH}
                           size="fixed"
-                          minWidth={300}
-                          maxWidth={PAGE_WIDTH}
-                          minHeight={200}
-                          maxHeight={PAGE_HEIGHT}
+                          minWidth={pageW}
+                          maxWidth={pageW}
+                          minHeight={pageH}
+                          maxHeight={pageH}
                           showCover={true}
                           flippingTime={700}
                           style={{ margin: "0 auto" }}
-                          startPage={0}
-                          drawShadow={true}
+                          startPage={currentPage - 1}
+                          drawShadow={false}
                           usePortrait={false}
                           startZIndex={0}
                           autoSize={true}
@@ -284,7 +285,7 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
                             }
                           }}
                           onFlip={onFlip}
-                          className="shadow-2xl rounded-sm"
+                          className="rounded-sm"
                         >
                           {flipPages}
                         </HTMLFlipBook>
@@ -297,7 +298,7 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
               {/* Counter — natural size, centered under scaled book */}
               {numPages > 0 && (
                 <div className="flex items-center justify-center mt-3" style={{
-                  width: bookW * zoom,
+                  width: bookW,
                   transition: "width 0.7s ease",
                 }}>
                   {editingCounter ? (
@@ -330,7 +331,7 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
             </div>
 
             {/* Next button — vertically centered with book only */}
-            <div className="flex items-center flex-shrink-0" style={{ height: PAGE_HEIGHT * zoom }}>
+            <div className="flex items-center flex-shrink-0" style={{ height: pageH }}>
               <button
                 onClick={goToNextPage}
                 disabled={atEnd || numPages === 0 || isFlipping}
@@ -346,7 +347,7 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
           </div>
 
           {/* Zoom controls */}
-          <div className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr auto 1fr", width: PAGE_WIDTH * zoom }}>
+          <div className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr auto 1fr", width: pageW }}>
             <div className="flex justify-start">
               <button onClick={() => setZoom((z) => Math.max(0.25, z - 0.1))} className="w-10 h-10 rounded-full flex items-center justify-center text-sm cursor-pointer shadow-sm" style={{ background: "#172c4f", color: "#fff" }} aria-label="Zoom out">−</button>
             </div>
