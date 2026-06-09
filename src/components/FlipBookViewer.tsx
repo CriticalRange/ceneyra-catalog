@@ -70,7 +70,7 @@ export default function FlipBookViewer({ pdfUrl, title }: FlipBookViewerProps) {
   useEffect(() => {
     const computeZoom = () => {
       const scaleW = (window.innerWidth - 120) / (PAGE_WIDTH * 2);
-      const scaleH = (window.innerHeight - 180) / PAGE_HEIGHT;
+      const scaleH = (window.innerHeight - 240) / PAGE_HEIGHT;
       const z = Math.min(scaleW, scaleH, 1);
       autoZoomRef.current = z;
       setZoom(z);
